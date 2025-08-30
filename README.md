@@ -49,8 +49,8 @@ For the most authentic and visually rich Matrix experience, we recommend configu
 
 ```bash
 # Clone the repository
-git clone [https://github.com/yourusername/matrix-countdown.git](https://github.com/yourusername/matrix-countdown.git)
-cd matrix-countdown
+git clone (https://github.com/HamedRaza004/cli-matrix-countdown.git)
+cd cli-matrix-countdown
 
 # Install dependencies
 pip install wcwidth
@@ -62,7 +62,7 @@ pip install windows-curses
 ### Usage
 
 ```bash
-python matrix_countdown.py
+python retro_countdown.py   
 ```
 
 The timer defaults to counting down to **11:00 PM (23:00)** today, or tomorrow if it's already past that time.
