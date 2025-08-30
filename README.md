@@ -1,12 +1,9 @@
 ```markdown
 # 🕐 Matrix Countdown Timer
 
-A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digital rain effect. Watch time tick away as cascading symbols fall around your countdown display!
+A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digital rain effect. Watch time tick away as cascading symbols fall around your countdown display.
 
-![Matrix Style](https://img.shields.io/badge/Style-Matrix-00ff00?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.6+-blue?style=for-the-badge&logo=python)
-![Terminal](https://img.shields.io/badge/Terminal-Required-black?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+---
 
 ## ✨ Features
 
@@ -18,18 +15,15 @@ A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digit
 - **🛡️ Crash-Proof**: Comprehensive fallback system prevents Unicode-related crashes
 - **🎨 Rich Symbol Variety**: 200+ different symbols including braille, geometric shapes, technical symbols, and more
 
+---
+
 ## 🎬 Demo
 
-```
+![Matrix Countdown Demo](https://user-images.githubusercontent.com/your-username/demo-gif.gif)
 
-⏳ 01:23:45 █
+*Replace the above GIF link with your actual demo GIF or screenshot.*
 
-⣿    ◆    ⊗    ▓    ✦
-▇    ⬢    ║    ⣾    •
-⡇    ★    ≡    ▒    ↑
-⬤    ┃    ♦    ⣷    ◉
-✧    ▄    ⊙    ░    ↗
-●    ⣯    ╣    ▲    ≣
+
 
 ````
 
