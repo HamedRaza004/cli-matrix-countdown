@@ -196,15 +196,5 @@ Contributions are welcome\! Areas for improvement:
 
 MIT License - feel free to use, modify, and distribute\!
 
-## 🎉 Acknowledgments
-
-  - Inspired by the **Matrix** film series
-  - Built with Python's excellent **curses** library
-  - Unicode symbol testing approach inspired by terminal compatibility best practices
-
------
-
-**Enjoy watching time flow through the Matrix\!** ⏳✨
-
 ```
 
