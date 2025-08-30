@@ -19,7 +19,7 @@ A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digit
 
 ## 🎬 Demo
 
-![Matrix Countdown Demo](https://user-images.githubusercontent.com/your-username/demo-gif.gif)
+![Matrix Countdown Demo](assets/demo.gif)
 
 *Replace the above GIF link with your actual demo GIF or screenshot.*
 
