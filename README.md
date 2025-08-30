@@ -21,7 +21,6 @@ A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digit
 
 ![Matrix Countdown Demo](assets/demo.gif)
 
-*Replace the above GIF link with your actual demo GIF or screenshot.*
 
 
 ## 🖥️ Terminal Setup for the Full Experience
@@ -208,4 +207,4 @@ MIT License - feel free to use, modify, and distribute\!
 **Enjoy watching time flow through the Matrix\!** ⏳✨
 
 ```
-```
+
