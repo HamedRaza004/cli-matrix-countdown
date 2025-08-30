@@ -1,4 +1,4 @@
-```markdown
+
 # 🕐 Matrix Countdown Timer
 
 A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digital rain effect. Watch time tick away as cascading symbols fall around your countdown display.
@@ -23,9 +23,6 @@ A mesmerizing terminal-based countdown timer inspired by the iconic Matrix digit
 
 *Replace the above GIF link with your actual demo GIF or screenshot.*
 
-
-
-````
 
 ## 🖥️ Terminal Setup for the Full Experience
 
