@@ -5,6 +5,7 @@
 import curses
 import time
 import random
+import sys
 from datetime import datetime, timedelta
 
 # Handle wide glyphs correctly with better fallback
@@ -108,7 +109,7 @@ def get_safe_symbols(stdscr):
     # Tier 3: Matrix-style symbols
     tier3_symbols = [
         # Braille patterns (the classic Matrix look)
-        "⡀", "⡁", "⡂", "⡃", "⡄", "⡅", "⡆", "⡇",
+        "⠀", "⠁", "⠂", "⠃", "⠄", "⠅", "⠆", "⠇",
         "⣀", "⣁", "⣂", "⣃", "⣄", "⣅", "⣆", "⣇",
         "⣿", "⣾", "⣽", "⣼", "⣻", "⣺", "⣹", "⣸",
         "⣷", "⣶", "⣵", "⣴", "⣳", "⣲", "⣱", "⣰",
@@ -118,7 +119,7 @@ def get_safe_symbols(stdscr):
         # Block elements
         "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█",
         "▉", "▊", "▋", "▌", "▍", "▎", "▏",
-        "▓", "▒", "░", "▔", "▕",
+        "▐", "░", "▒", "▓", "▔", "▕",
         # Geometric shapes
         "◆", "◇", "◈", "◉", "◊", "○", "◌", "◍", "◎", "●",
         "◐", "◑", "◒", "◓", "◔", "◕", "◖", "◗",
@@ -132,10 +133,10 @@ def get_safe_symbols(stdscr):
         "≡", "≣", "≢", "≡", "≠", "≤", "≥", "≈", "≅",
         "⊗", "⊙", "⊚", "⊛", "⊜", "⊝", "⊞", "⊟",
         "⊠", "⊡", "⊢", "⊣", "⊤", "⊥", "⊦", "⊧",
-        "⟐", "⟑", "⟒", "⟓", "⟔", "⟕", "⟖", "⟗",
+        "⟇", "⟑", "⟒", "⟓", "⟔", "⟕", "⟖", "⟗",
         # Arrows (more variety)
         "↖", "↗", "↘", "↙", "↚", "↛", "↜", "↝",
-        "⇑", "⇓", "⇐", "⇒", "⇔", "⇕", "⇖", "⇗",
+        "⇐", "⇓", "⇑", "⇒", "⇔", "⇕", "⇖", "⇗",
         "⇘", "⇙", "⇚", "⇛", "⇜", "⇝"
     ]
 
@@ -166,7 +167,7 @@ def get_safe_symbols(stdscr):
         "♜", "♝", "♞", "♟",
         # Weather
         "☀", "☁", "☂", "☃", "☄", "★", "☆", "☇",
-        "☈", "☉", "☊", "☋", "☌", "☍", "☎", "☏"
+        "☈", "☉", "☊", "☋", "☌", "☍", "☎", "☔"
     ]
 
     # Start with Tier 1 (always works)
@@ -207,11 +208,6 @@ def countdown_matrix(stdscr, target):
     else:
         color_pair = curses.A_BOLD
 
-    # Get safe symbols by actually testing them in the current terminal
-    symbols = get_safe_symbols(stdscr)
-    if not symbols:  # Fallback if no symbols work
-        symbols = ["|", ":", ".", "*", "#", "+", "-", "="]
-
     # Initialize matrix state
     height, width = stdscr.getmaxyx()
     cols = list(range(0, max(2, width - 1), 2))  # Stay within bounds
@@ -251,16 +247,56 @@ def test_and_measure_chars(stdscr):
     return safe_frames, frame_width, block_cursor, cursor_width
 
 
-def countdown_matrix(stdscr, target):
+class Particle:
+    """Represents a single spark/glitch particle"""
+
+    def __init__(self, x, y, symbol, lifetime, dx=0, dy=0, color_variant=0):
+        self.x = x
+        self.y = y
+        self.symbol = symbol
+        self.lifetime = lifetime
+        self.max_lifetime = lifetime
+        self.dx = dx  # movement in x direction
+        self.dy = dy  # movement in y direction
+        self.color_variant = color_variant
+
+    def update(self):
+        """Update particle position and lifetime"""
+        self.x += self.dx
+        self.y += self.dy
+        self.lifetime -= 1
+        return self.lifetime > 0
+
+    def get_alpha(self):
+        """Get alpha value based on remaining lifetime (0.0 to 1.0)"""
+        return self.lifetime / self.max_lifetime if self.max_lifetime > 0 else 0
+
+
+def countdown_matrix(stdscr, target, theme):
     curses.curs_set(0)
 
-    # Initialize colors safely
+    # Initialize colors based on selected theme
     if curses.has_colors():
         curses.start_color()
-        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        color_pair = curses.color_pair(1) | curses.A_BOLD
+        curses.init_pair(1, theme.primary, theme.background)  # Main countdown
+        curses.init_pair(2, theme.secondary, theme.background)  # Matrix rain
+        curses.init_pair(3, theme.accent1, theme.background)  # Spark color 1
+        curses.init_pair(4, theme.accent2, theme.background)  # Spark color 2
+        curses.init_pair(5, theme.urgent, theme.background)  # Urgent/glitch color
+        curses.init_pair(6, theme.accent1, theme.background)  # Extra accent
+
+        color_pair = curses.color_pair(1) | curses.A_BOLD  # Main countdown
+        matrix_color = curses.color_pair(2) | curses.A_BOLD  # Matrix rain
+        spark_colors = [
+            curses.color_pair(3) | curses.A_BOLD,  # Accent 1
+            curses.color_pair(4) | curses.A_BOLD,  # Accent 2
+            curses.color_pair(5) | curses.A_BOLD,  # Urgent
+            curses.color_pair(6) | curses.A_BOLD,  # Extra accent
+        ]
     else:
         color_pair = curses.A_BOLD
+        matrix_color = curses.A_BOLD
+        spark_colors = [curses.A_BOLD, curses.A_REVERSE, curses.A_UNDERLINE]
 
     # Test and measure characters once at startup
     spinner_frames, frame_width, block_cursor, cursor_width = test_and_measure_chars(stdscr)
@@ -270,10 +306,27 @@ def countdown_matrix(stdscr, target):
     if not symbols:  # Ultimate fallback
         symbols = ["|", ":", ".", "*", "#", "+", "-", "="]
 
+    # Particle-specific symbols (sparks and glitches)
+    spark_symbols = ["*", ".", "·", "°", "˚", "•", "◦", "○", "◯"]
+    glitch_symbols = ["#", "@", "&", "%", "?", "!", "~", "^", "¿", "¡"]
+
+    # Test which particle symbols work
+    working_sparks = [s for s in spark_symbols if test_symbol_safely(stdscr, s)]
+    working_glitches = [s for s in glitch_symbols if test_symbol_safely(stdscr, s)]
+
+    if not working_sparks:
+        working_sparks = ["*", ".", "+"]
+    if not working_glitches:
+        working_glitches = ["#", "@", "?"]
+
     # Initialize matrix state with denser rain
     height, width = stdscr.getmaxyx()
     cols = list(range(0, max(2, width - 1), 1))  # Changed from step 2 to step 1 for more columns
     drops = [random.randint(-height, height) for _ in cols]
+
+    # Initialize particle system
+    particles = []
+    last_particle_spawn = time.time()
 
     si = 0
     cursor_visible = True
@@ -301,7 +354,7 @@ def countdown_matrix(stdscr, target):
         if remaining.total_seconds() <= 0:
             try:
                 stdscr.erase()
-                msg = "✔ TIME'S UP! ✔"
+                msg = "✓ TIME'S UP! ✓"
                 msg_width = safe_wcswidth(msg)
                 x = max(0, min(width - msg_width, (width - msg_width) // 2))
                 y = max(0, min(height - 1, height // 2))
@@ -364,6 +417,68 @@ def countdown_matrix(stdscr, target):
             safe_left = max(0, start_x - pad_x)
             safe_right = min(width - 1, cursor_x + cursor_width + pad_x)
             display_timer = True
+
+            # Spawn particles around the countdown
+            current_time = time.time()
+            if current_time - last_particle_spawn >= 0.1:  # Spawn every 100ms
+                # Calculate intensity based on remaining time
+                total_minutes = remaining.total_seconds() / 60
+                if total_minutes <= 60:  # More intense in last hour
+                    intensity = max(1, int(6 - (total_minutes / 10)))  # 1-6 particles
+                elif total_minutes <= 300:  # Moderate in last 5 hours
+                    intensity = max(1, int(3 - (total_minutes / 100)))  # 1-3 particles
+                else:
+                    intensity = 1  # Minimal particles for longer countdowns
+
+                # Determine particle type based on urgency
+                if total_minutes <= 5:  # Last 5 minutes - urgent glitches
+                    particle_type = "urgent_glitch"
+                elif total_minutes <= 30:  # Last 30 minutes - mixed
+                    particle_type = random.choice(["spark", "glitch"])
+                else:  # Normal sparks
+                    particle_type = "spark"
+
+                # Spawn particles around countdown area
+                for _ in range(intensity):
+                    # Random position around countdown (not directly on it)
+                    if random.choice([True, False]):  # Spawn on sides
+                        px = random.choice([
+                            random.randint(max(0, safe_left - 5), safe_left),  # Left side
+                            random.randint(safe_right, min(width - 1, safe_right + 5))  # Right side
+                        ])
+                        py = random.randint(safe_top, safe_bottom)
+                    else:  # Spawn above/below
+                        px = random.randint(safe_left, safe_right)
+                        py = random.choice([
+                            random.randint(max(0, safe_top - 3), safe_top),  # Above
+                            random.randint(safe_bottom, min(height - 1, safe_bottom + 3))  # Below
+                        ])
+
+                    # Choose symbol and properties based on particle type
+                    if particle_type == "urgent_glitch":
+                        symbol = random.choice(working_glitches)
+                        lifetime = random.randint(8, 20)  # Longer lasting
+                        dx = random.choice([-1, 0, 1]) * 0.3
+                        dy = random.choice([-1, 0, 1]) * 0.3
+                        color_idx = random.choice([1, 2])  # Red/yellow for urgency
+                    elif particle_type == "glitch":
+                        symbol = random.choice(working_glitches)
+                        lifetime = random.randint(5, 15)
+                        dx = random.choice([-1, 0, 1]) * 0.2
+                        dy = random.choice([-1, 0, 1]) * 0.2
+                        color_idx = random.randint(0, len(spark_colors) - 1)
+                    else:  # spark
+                        symbol = random.choice(working_sparks)
+                        lifetime = random.randint(3, 12)
+                        dx = random.uniform(-0.5, 0.5)
+                        dy = random.uniform(-0.5, 0.5)
+                        color_idx = random.randint(0, len(spark_colors) - 1)
+
+                    # Ensure particle starts in bounds
+                    if 0 <= px < width - 1 and 0 <= py < height:
+                        particles.append(Particle(px, py, symbol, lifetime, dx, dy, color_idx))
+
+                last_particle_spawn = current_time
         else:
             # Timer too wide, don't display it and don't create safe area
             safe_top = safe_bottom = safe_left = safe_right = -1
@@ -373,6 +488,36 @@ def countdown_matrix(stdscr, target):
             stdscr.erase()
         except curses.error:
             pass
+
+        # Update and render particles
+        active_particles = []
+        for particle in particles:
+            if particle.update():  # Returns True if particle is still alive
+                # Calculate display position
+                display_x = int(particle.x)
+                display_y = int(particle.y)
+
+                # Only render if in bounds and not overlapping countdown
+                if (0 <= display_x < width - 1 and 0 <= display_y < height and
+                        not (safe_left <= display_x <= safe_right and safe_top <= display_y <= safe_bottom)):
+
+                    try:
+                        # Choose color based on particle's color variant and alpha
+                        alpha = particle.get_alpha()
+                        if alpha > 0.7:  # Bright particles
+                            color = spark_colors[particle.color_variant % len(spark_colors)]
+                        elif alpha > 0.3:  # Medium particles
+                            color = spark_colors[particle.color_variant % len(spark_colors)]
+                        else:  # Fading particles
+                            color = matrix_color  # Use theme's matrix color for fading
+
+                        stdscr.addstr(display_y, display_x, particle.symbol, color)
+                    except (curses.error, UnicodeEncodeError):
+                        pass  # Skip particles that can't be drawn
+
+                active_particles.append(particle)
+
+        particles = active_particles  # Keep only active particles
 
         # Draw matrix rain with comprehensive fallback handling
         for i, col in enumerate(cols):
@@ -392,12 +537,12 @@ def countdown_matrix(stdscr, target):
                         ch = random.choice(symbols)
                         ch_width = safe_wcswidth(ch)
                         if ch_width is not None and col + ch_width <= width:
-                            stdscr.addstr(row, col, ch, color_pair)
+                            stdscr.addstr(row, col, ch, matrix_color)  # Use theme's matrix color
                             break  # Success, exit fallback loop
                     except (curses.error, UnicodeEncodeError):
                         if attempt == 2:  # Last attempt, use basic fallback
                             try:
-                                stdscr.addstr(row, col, "|", color_pair)
+                                stdscr.addstr(row, col, "|", matrix_color)  # Use theme's matrix color
                             except curses.error:
                                 pass
 
@@ -444,18 +589,99 @@ def countdown_matrix(stdscr, target):
         time.sleep(0.05)
 
 
-def main():
+class ColorTheme:
+    """Color theme configuration"""
+
+    def __init__(self, name, primary, secondary, accent1, accent2, urgent, scanline=None,
+                 background=curses.COLOR_BLACK):
+        self.name = name
+        self.primary = primary  # Main countdown color
+        self.secondary = secondary  # Matrix rain color
+        self.accent1 = accent1  # Spark color 1
+        self.accent2 = accent2  # Spark color 2
+        self.urgent = urgent  # Urgent/glitch color
+        self.scanline = scanline or primary  # Scanline color (defaults to primary)
+        self.background = background
+
+
+def get_color_themes():
+    """Define available color themes"""
+    themes = {
+        'matrix': ColorTheme('Matrix Green', curses.COLOR_GREEN, curses.COLOR_GREEN,
+                             curses.COLOR_YELLOW, curses.COLOR_WHITE, curses.COLOR_RED,
+                             scanline=curses.COLOR_GREEN),
+        'retro': ColorTheme('Retro Amber', curses.COLOR_YELLOW, curses.COLOR_YELLOW,
+                            curses.COLOR_RED, curses.COLOR_WHITE, curses.COLOR_RED,
+                            scanline=curses.COLOR_YELLOW),
+        'scifi': ColorTheme('Sci-Fi Blue', curses.COLOR_CYAN, curses.COLOR_BLUE,
+                            curses.COLOR_WHITE, curses.COLOR_MAGENTA, curses.COLOR_RED,
+                            scanline=curses.COLOR_CYAN),
+        'urgent': ColorTheme('Urgent Red', curses.COLOR_RED, curses.COLOR_RED,
+                             curses.COLOR_YELLOW, curses.COLOR_WHITE, curses.COLOR_RED,
+                             scanline=curses.COLOR_RED),
+        'cyberpunk': ColorTheme('Cyberpunk Purple', curses.COLOR_MAGENTA, curses.COLOR_CYAN,
+                                curses.COLOR_YELLOW, curses.COLOR_RED, curses.COLOR_RED,
+                                scanline=curses.COLOR_MAGENTA),
+        'terminal': ColorTheme('Classic Terminal', curses.COLOR_WHITE, curses.COLOR_GREEN,
+                               curses.COLOR_CYAN, curses.COLOR_YELLOW, curses.COLOR_RED,
+                               scanline=curses.COLOR_WHITE)
+    }
+    return themes
+
+
+def parse_args():
+    """Parse command line arguments for time and optional theme"""
+    if len(sys.argv) < 2:
+        script_name = sys.argv[0]
+        print(f"Usage: python {script_name} HH:MM [theme]")
+        print(f"Example: python {script_name} 22:00")
+        print(f"Example: python {script_name} 22:00 retro")
+        print("\nAvailable themes:")
+        themes = get_color_themes()
+        for theme_name, theme in themes.items():
+            print(f"  {theme_name} - {theme.name}")
+        sys.exit(1)
+
+    time_str = sys.argv[1]
+    theme_name = sys.argv[2] if len(sys.argv) > 2 else 'matrix'
+
+    # Parse time
     try:
-        # Set target to 23:00 (11 PM) today, or tomorrow if already past
-        target = datetime.now().replace(hour=23, minute=0, second=0, microsecond=0)
-        if target < datetime.now():
+        hour, minute = map(int, time_str.split(':'))
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError("Invalid time format")
+
+        now = datetime.now()
+        target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if target <= now:
             target += timedelta(days=1)
 
+    except (ValueError, IndexError):
+        print("Error: Please provide time in HH:MM format (24-hour)")
+        print("Example: python retro_countdown.py 22:00")
+        sys.exit(1)
+
+    # Validate theme
+    themes = get_color_themes()
+    if theme_name not in themes:
+        print(f"Error: Unknown theme '{theme_name}'")
+        print("Available themes:", ", ".join(themes.keys()))
+        sys.exit(1)
+
+    return target, themes[theme_name]
+
+
+def main():
+    try:
+        # Parse command line arguments
+        target, theme = parse_args()
+
         print(f"Countdown target: {target.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Theme: {theme.name}")
         print("Press Ctrl+C to exit")
         time.sleep(2)  # Give user time to read
 
-        curses.wrapper(countdown_matrix, target)
+        curses.wrapper(countdown_matrix, target, theme)
 
     except KeyboardInterrupt:
         print("\nCountdown interrupted by user")
